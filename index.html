@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Samsung GMCS Master Analytics Portal</title>
+
+  <!-- Tailwind CSS & FontAwesome -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <!-- SheetJS & Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            samsung: {
+              blue: '#034EA2',
+              dark: '#001E4D',
+              accent: '#2B80FF',
+              light: '#EDF5FD'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    .sticky-col-left {
+      position: sticky;
+      left: 0;
+      z-index: 20;
+    }
+    .sticky-tbl-head th {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+    }
+    
+    .marquee-container {
+      overflow: hidden;
+      white-space: nowrap;
+      position: relative;
+    }
+    .marquee-content {
+      display: inline-block;
+      animation: marqueeSlide 24s linear infinite;
+    }
+    .marquee-container:hover .marquee-content {
+      animation-play-state: paused;
+    }
+    @keyframes marqueeSlide {
+      0% { transform: translateX(100%); }
+      100% { transform: translateX(-100%); }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col selection:bg-blue-100 selection:text-samsung-blue">
+
+  <!-- Sliding Marquee Bar -->
+  <div class="bg-slate-900 border-b border-blue-900/40 text-blue-200 text-xs py-1.5 px-3 font-semibold tracking-wide shadow-inner marquee-container">
+    <div class="marquee-content flex items-center gap-8">
+      <span class="flex items-center gap-2">
+        <i class="fa-solid fa-sparkles text-amber-400"></i> Samsung GMCS Sales Intelligence Portal &bull; Enterprise Analytics Platform
+      </span>
+      <span class="text-white bg-blue-600/70 px-3 py-0.5 rounded-full border border-blue-400/40 font-bold flex items-center gap-1.5 shadow-sm">
+        <i class="fa-solid fa-user-check text-emerald-400"></i> Created by Vaibhav Zambare
+      </span>
+      <span class="flex items-center gap-2">
+        <i class="fa-solid fa-bolt text-yellow-400"></i> Strict GMCS Dealer Code &bull; Direct Focus & Model Mapping &bull; Full Mobile Responsive
+      </span>
+      <span class="text-white bg-blue-600/70 px-3 py-0.5 rounded-full border border-blue-400/40 font-bold flex items-center gap-1.5 shadow-sm">
+        <i class="fa-solid fa-user-check text-emerald-400"></i> Created by Vaibhav Zambare
+      </span>
+    </div>
+  </div>
+
+  <!-- Main Navigation Header -->
+  <header class="bg-gradient-to-r from-samsung-dark via-samsung-blue to-blue-700 text-white shadow-xl sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 py-3 flex flex-wrap justify-between items-center gap-2 sm:gap-4">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/10 flex items-center justify-center border border-white/20 shadow-inner">
+          <i class="fa-solid fa-mobile-screen-button text-blue-200 text-lg sm:text-xl"></i>
+        </div>
+        <div>
+          <h1 class="text-sm sm:text-lg font-extrabold tracking-tight flex items-center gap-1.5 sm:gap-2">
+            Samsung GMCS Engine
+            <span class="text-[9px] sm:text-[10px] font-bold bg-emerald-500/30 text-emerald-200 border border-emerald-400/40 px-2 py-0.5 rounded-full">v5.0 Dual-Map</span>
+          </h1>
+          <p class="text-[10px] sm:text-xs text-blue-100/80">Accurate Model Mapping &bull; GMCS Dealer Code &bull; Responsive UI</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 text-xs">
+        <div id="statusBadge" class="hidden items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 border border-white/20 font-medium">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="statusText" class="text-[11px]">Ready</span>
+        </div>
+        <button id="resetAppBtn" class="px-2.5 sm:px-3.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 transition-all font-semibold flex items-center gap-1 text-[11px] sm:text-xs">
+          <i class="fa-solid fa-rotate-left"></i> Reset
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6 flex-1 w-full space-y-4 sm:space-y-6">
+
+    <!-- Upload Card -->
+    <section class="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-200">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+        <div>
+          <h2 class="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+            <i class="fa-solid fa-file-excel text-emerald-600"></i> Upload GMCS Sales Sheet (.xlsx / .xlsb / .csv)
+          </h2>
+          <p class="text-xs text-slate-500 mt-0.5">Scans Column D (Model) and Column G (Focus) together to eliminate mismatch.</p>
+        </div>
+        <button id="loadQuickDemoBtn" class="w-full sm:w-auto text-xs font-semibold px-3 py-2 rounded-xl bg-samsung-light text-samsung-blue hover:bg-blue-100 transition-all border border-blue-200 flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Load GMCS Demo Data
+        </button>
+      </div>
+
+      <!-- File Drop Area -->
+      <div id="dropZone" class="border-2 border-dashed border-slate-300 hover:border-samsung-blue bg-slate-50/70 hover:bg-blue-50/30 rounded-xl p-5 sm:p-8 text-center cursor-pointer transition-all flex flex-col items-center justify-center">
+        <input type="file" id="fileInput" accept=".xlsx, .xls, .xlsb, .csv" class="hidden" />
+        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-100 text-samsung-blue flex items-center justify-center text-lg sm:text-xl mb-2 shadow-sm">
+          <i class="fa-solid fa-cloud-arrow-up"></i>
+        </div>
+        <p class="text-xs sm:text-sm font-bold text-slate-700">Click to browse or drop your GMCS Excel file here</p>
+        <p class="text-[11px] sm:text-xs text-slate-400 mt-1">Dual-mapped on Model + Focus columns to prevent laptop/phone misclassification</p>
+        <div id="fileInfoBox" class="mt-2.5 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full hidden"></div>
+      </div>
+
+      <!-- Verified Column Mappings -->
+      <div id="mappingSection" class="hidden mt-4 pt-3 border-t border-slate-100">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Auto Mapped Sheet Columns</span>
+          <span class="text-[11px] text-emerald-600 font-semibold"><i class="fa-solid fa-circle-check"></i> Verified</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">GMCS Dealer Code (Column B)</label>
+            <select id="mapDealerCode" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium"></select>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">GMCS SPC Name (Column R)</label>
+            <select id="mapExecutive" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium"></select>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">Sales Date Column</label>
+            <select id="mapDate" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium"></select>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">Model / Focus Column</label>
+            <select id="mapModel" class="w-full text-xs rounded-lg border-slate-300 bg-slate-50 p-2 font-medium"></select>
+          </div>
+        </div>
+
+        <div class="mt-4 flex justify-end">
+          <button id="visualizeDataBtn" class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-samsung-dark to-samsung-blue hover:from-blue-900 hover:to-blue-700 text-white font-bold text-xs tracking-wider uppercase shadow-md transition-all flex items-center justify-center gap-2">
+            <i class="fa-solid fa-chart-simple"></i> Visualize The Data
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Analytics Dashboard -->
+    <div id="analyticsDashboard" class="hidden space-y-4 sm:space-y-6">
+
+      <!-- Dynamic Multi-Tab Filter Bar -->
+      <section class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white rounded-2xl p-4 sm:p-5 shadow-lg border border-slate-700">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2.5 mb-3.5">
+          <div>
+            <h3 class="text-xs sm:text-sm font-bold tracking-wide flex items-center gap-2">
+              <i class="fa-solid fa-sliders text-samsung-accent"></i> Filter Control Center
+            </h3>
+            <p class="text-[11px] text-slate-400">Searchable across all 70,000+ GMCS dealer codes & every tab heading</p>
+          </div>
+          <button id="resetFiltersBtn" class="text-xs text-samsung-accent hover:underline flex items-center gap-1 font-semibold self-end sm:self-auto">
+            <i class="fa-solid fa-arrows-rotate"></i> Reset All Filters
+          </button>
+        </div>
+
+        <!-- Primary Core Filters -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pb-3.5 border-b border-slate-700/60">
+
+          <!-- 1. Strict GMCS Dealer Code Search -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1 flex items-center justify-between">
+              <span><i class="fa-solid fa-barcode text-emerald-400 mr-1"></i> GMCS Dealer Code</span>
+              <span id="dealerCountLabel" class="text-[10px] text-slate-400">0 loaded</span>
+            </label>
+            <div class="relative">
+              <input type="text" id="dealerSearchInput" placeholder="Type Dealer Code (e.g. WESD...)" class="w-full bg-slate-800 text-white text-xs rounded-xl border border-slate-600 p-2 font-mono focus:ring-2 focus:ring-samsung-accent" />
+              <div id="dealerDropdownList" class="hidden absolute left-0 right-0 top-full mt-1 max-h-44 overflow-y-auto bg-slate-800 border border-slate-600 rounded-xl shadow-2xl z-50 divide-y divide-slate-700 text-xs"></div>
+            </div>
+            <div id="activeDealerBadge" class="mt-1 hidden flex items-center justify-between text-[11px] bg-blue-500/20 text-blue-200 border border-blue-400/30 px-2 py-0.5 rounded-lg">
+              <span id="activeDealerText" class="truncate font-mono font-bold"></span>
+              <button id="clearDealerBtn" class="text-red-400 hover:text-red-300 ml-1 font-bold text-sm">&times;</button>
+            </div>
+          </div>
+
+          <!-- 2. GMCS SPC Name -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">
+              <i class="fa-solid fa-user-tie text-blue-400 mr-1"></i> GMCS SPC Name (Executive)
+            </label>
+            <select id="filterExecutive" class="w-full bg-slate-800 text-white text-xs rounded-xl border border-slate-600 p-2 font-medium focus:ring-2 focus:ring-samsung-accent">
+              <option value="ALL">All Executives (GMCS SPC Name)</option>
+            </select>
+          </div>
+
+          <!-- 3. Sales Date Filter -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">
+              <i class="fa-regular fa-calendar-days text-amber-400 mr-1"></i> Sales Date Focus
+            </label>
+            <select id="filterDate" class="w-full bg-slate-800 text-white text-xs rounded-xl border border-slate-600 p-2 font-medium focus:ring-2 focus:ring-samsung-accent">
+              <option value="ALL">All Dates (Date-wise Matrix)</option>
+            </select>
+          </div>
+
+          <!-- 4. Target Model Filter -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">
+              <i class="fa-solid fa-mobile-screen text-purple-400 mr-1"></i> Samsung Target Model
+            </label>
+            <select id="filterModel" class="w-full bg-slate-800 text-white text-xs rounded-xl border border-slate-600 p-2 font-medium focus:ring-2 focus:ring-samsung-accent">
+              <option value="ALL">All Samsung Target Models</option>
+            </select>
+          </div>
+
+        </div>
+
+        <!-- Secondary: All Sheet Heading Tabs Filter Row -->
+        <div class="mt-3">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+              <i class="fa-solid fa-table-list text-amber-400"></i> All Sheet Column Heading Filter
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+            <div>
+              <label class="block text-[10px] font-medium text-slate-400 mb-0.5">Select Sheet Column / Heading Tab</label>
+              <select id="extraHeaderColumnSelect" class="w-full bg-slate-800 text-white text-xs rounded-xl border border-slate-600 p-2 font-medium focus:ring-2 focus:ring-samsung-accent">
+                <option value="">-- Choose Column Heading Tab --</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-medium text-slate-400 mb-0.5">Filter by Column's Value</label>
+              <select id="extraHeaderValueSelect" class="w-full bg-slate-800 text-white text-xs rounded-xl border border-slate-600 p-2 font-medium focus:ring-2 focus:ring-samsung-accent" disabled>
+                <option value="ALL">All Values</option>
+              </select>
+            </div>
+            <div class="flex items-end">
+              <div id="extraFilterStatus" class="text-[11px] text-blue-200 bg-blue-900/40 border border-blue-700/50 rounded-xl p-2 w-full truncate">
+                <i class="fa-solid fa-circle-info text-blue-400 mr-1"></i> No heading filter applied
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- KPI Summary Cards -->
+      <section class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-blue-50 text-samsung-blue flex items-center justify-center text-base sm:text-lg font-bold shrink-0">
+            <i class="fa-solid fa-boxes-stacked"></i>
+          </div>
+          <div class="min-w-0">
+            <p class="text-[11px] text-slate-500 font-semibold truncate">Total Quantity</p>
+            <h4 id="kpiTotalQty" class="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">0</h4>
+            <span class="text-[10px] text-slate-400">Total Units Sold</span>
+          </div>
+        </div>
+
+        <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-base sm:text-lg font-bold shrink-0">
+            <i class="fa-solid fa-barcode"></i>
+          </div>
+          <div class="min-w-0">
+            <p class="text-[11px] text-slate-500 font-semibold truncate">GMCS Dealer Codes</p>
+            <h4 id="kpiActiveDealers" class="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">0</h4>
+            <span class="text-[10px] text-slate-400">Active Stores</span>
+          </div>
+        </div>
+
+        <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-base sm:text-lg font-bold shrink-0">
+            <i class="fa-solid fa-id-badge"></i>
+          </div>
+          <div class="min-w-0">
+            <p class="text-[11px] text-slate-500 font-semibold truncate">GMCS SPC Staff</p>
+            <h4 id="kpiActiveExecs" class="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">0</h4>
+            <span class="text-[10px] text-slate-400">Sales Executives</span>
+          </div>
+        </div>
+
+        <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-base sm:text-lg font-bold shrink-0">
+            <i class="fa-solid fa-fire"></i>
+          </div>
+          <div class="min-w-0">
+            <p class="text-[11px] text-slate-500 font-semibold truncate">Top Model / Line</p>
+            <h4 id="kpiTopModel" class="text-sm font-extrabold text-slate-900 truncate leading-tight">-</h4>
+            <span id="kpiTopModelQty" class="text-[10px] text-slate-400">0 units</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Charts Section -->
+      <section class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div class="lg:col-span-2 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <h4 class="text-xs sm:text-sm font-bold text-slate-900">Date-wise Sales Movement</h4>
+              <p class="text-[11px] text-slate-400">Total units sold per day</p>
+            </div>
+            <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-lg text-xs font-semibold">
+              <button id="toggleBarChart" class="px-2 py-0.5 rounded bg-white shadow-xs text-samsung-blue font-bold text-[11px]">Bar</button>
+              <button id="toggleLineChart" class="px-2 py-0.5 rounded text-slate-600 hover:text-slate-900 text-[11px]">Line</button>
+            </div>
+          </div>
+          <div class="relative h-56 sm:h-64 w-full">
+            <canvas id="trendChartCanvas"></canvas>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div>
+            <h4 class="text-xs sm:text-sm font-bold text-slate-900">Model Share Distribution</h4>
+            <p class="text-[11px] text-slate-400">Real proportion across phones & laptops</p>
+          </div>
+          <div class="relative h-48 sm:h-56 w-full flex items-center justify-center my-auto">
+            <canvas id="donutChartCanvas"></canvas>
+          </div>
+          <p class="text-center text-[10px] text-slate-400">Accurately mapped with Focus tags</p>
+        </div>
+      </section>
+
+      <!-- Executive Upload Breakdown Table -->
+      <section class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
+          <div>
+            <h4 class="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-2">
+              <i class="fa-solid fa-users text-samsung-blue"></i> GMCS SPC Executive Upload Summary
+            </h4>
+            <p class="text-[11px] text-slate-500">Sales uploaded by each GMCS SPC Name along with mapped GMCS Dealer Codes.</p>
+          </div>
+          <span id="execCountBadge" class="text-[11px] px-2.5 py-0.5 rounded-full bg-slate-100 font-semibold text-slate-600">0 Executives</span>
+        </div>
+
+        <div class="overflow-x-auto max-h-60 border border-slate-200 rounded-xl">
+          <table class="w-full text-left text-xs whitespace-nowrap">
+            <thead class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200 sticky top-0 z-10">
+              <tr>
+                <th class="py-2 px-3 sm:px-4">GMCS SPC Name (Executive)</th>
+                <th class="py-2 px-3 sm:px-4">Associated GMCS Dealer Codes</th>
+                <th class="py-2 px-3 sm:px-4 text-center">Total Quantity Uploaded</th>
+                <th class="py-2 px-3 sm:px-4 text-right">Contribution %</th>
+              </tr>
+            </thead>
+            <tbody id="execTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Model-Wise & Date-Wise Sales Matrix Table (Rows: Models | Columns: Dates) -->
+      <section class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3.5">
+          <div>
+            <h4 class="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-2">
+              <i class="fa-solid fa-table-cells text-samsung-blue"></i> Model-Wise & Date-Wise Sales Matrix
+            </h4>
+            <p class="text-[11px] text-slate-500">Exact quantity for every model & laptops on each date &bull; Day column totals and model totals.</p>
+          </div>
+          <div class="flex items-center gap-2 w-full sm:w-auto">
+            <button id="exportExcelBtn" class="flex-1 sm:flex-none text-[11px] sm:text-xs font-semibold px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-all flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-file-excel"></i> Export Excel
+            </button>
+            <button id="exportCsvBtn" class="flex-1 sm:flex-none text-[11px] sm:text-xs font-semibold px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-file-csv"></i> CSV
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto max-h-[500px] border border-slate-200 rounded-xl relative shadow-inner">
+          <table id="matrixTable" class="w-full text-xs text-left border-collapse whitespace-nowrap">
+            <thead id="matrixThead" class="bg-slate-100 text-slate-800 font-bold border-b border-slate-300 sticky-tbl-head"></thead>
+            <tbody id="matrixTbody" class="divide-y divide-slate-100 font-medium"></tbody>
+            <tfoot id="matrixTfoot" class="bg-slate-100 text-slate-900 font-bold border-t-2 border-slate-300 sticky bottom-0 z-20"></tfoot>
+          </table>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="bg-white border-t border-slate-200 py-3 mt-auto text-center text-xs text-slate-500 font-medium">
+    Samsung GMCS Analytics Engine &bull; Designed & Developed by <span class="text-samsung-blue font-bold">Vaibhav Zambare</span>
+  </footer>
+
+  <!-- Core JavaScript Engine -->
+  <script>
+    // Exact Samsung Target Models Master List
+    const TARGET_MODELS = [
+      "FOLD8 ULTRA", "FOLD8", "FLIP8", "FOLD7",
+      "S26 ULTRA", "S26", "S25 ULTRA", "S25 Edge",
+      "S26 FE", "S25", "S25 FE", "A57", "A37",
+      "A27", "A36", "A26", "A17", "A07 5G", "F17",
+      "GALAXY BOOK (LAPTOPS)", "TABLETS", "WEARABLES"
+    ];
+
+    // Global State
+    const AppData = {
+      rawRecords: [],
+      allHeaders: [],
+      fields: {
+        dealerCode: '',
+        spcName: '',
+        date: '',
+        model: '',
+        focus: ''
+      },
+      selectedDealerCode: 'ALL',
+      selectedExtraHeader: '',
+      selectedExtraValue: 'ALL',
+      allDealerCodes: [],
+      allExecutives: [],
+      allDates: [],
+      activeChartType: 'bar',
+      chartTrendInst: null,
+      chartPieInst: null
+    };
+
+    // DOM References
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const fileInfoBox = document.getElementById('fileInfoBox');
+    const mappingSection = document.getElementById('mappingSection');
+    const visualizeDataBtn = document.getElementById('visualizeDataBtn');
+    const analyticsDashboard = document.getElementById('analyticsDashboard');
+    const statusBadge = document.getElementById('statusBadge');
+    const statusText = document.getElementById('statusText');
+
+    // Filter Elements
+    const dealerSearchInput = document.getElementById('dealerSearchInput');
+    const dealerDropdownList = document.getElementById('dealerDropdownList');
+    const dealerCountLabel = document.getElementById('dealerCountLabel');
+    const activeDealerBadge = document.getElementById('activeDealerBadge');
+    const activeDealerText = document.getElementById('activeDealerText');
+    const clearDealerBtn = document.getElementById('clearDealerBtn');
+    const filterExecutive = document.getElementById('filterExecutive');
+    const filterDate = document.getElementById('filterDate');
+    const filterModel = document.getElementById('filterModel');
+    const extraHeaderColumnSelect = document.getElementById('extraHeaderColumnSelect');
+    const extraHeaderValueSelect = document.getElementById('extraHeaderValueSelect');
+    const extraFilterStatus = document.getElementById('extraFilterStatus');
+    const resetFiltersBtn = document.getElementById('resetFiltersBtn');
+
+    // Drag-Drop Event Listeners
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-samsung-blue', 'bg-blue-50/50'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-samsung-blue', 'bg-blue-50/50'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('border-samsung-blue', 'bg-blue-50/50');
+      if (e.dataTransfer.files.length) parseIncomingFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length) parseIncomingFile(e.target.files[0]);
+    });
+
+    // Parse Uploaded Excel File
+    function parseIncomingFile(file) {
+      fileInfoBox.textContent = `Reading ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)...`;
+      fileInfoBox.classList.remove('hidden');
+      statusBadge.classList.remove('hidden');
+      statusText.textContent = 'Parsing rows...';
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        setTimeout(() => {
+          try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+            
+            const sheetName = workbook.SheetNames.includes('Sheet1') ? 'Sheet1' : workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const jsonRows = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+
+            if (!jsonRows || jsonRows.length === 0) {
+              alert('Uploaded sheet contains no data.');
+              return;
+            }
+
+            AppData.rawRecords = jsonRows;
+            AppData.allHeaders = Object.keys(jsonRows[0]);
+            statusText.textContent = `${jsonRows.length.toLocaleString()} Rows Loaded`;
+            fileInfoBox.textContent = `${file.name} - ${jsonRows.length.toLocaleString()} records processed`;
+
+            populateColumnMappings(AppData.allHeaders);
+            populateExtraHeaderOptions(AppData.allHeaders);
+          } catch (err) {
+            console.error(err);
+            alert('File reading error. Please ensure the Excel file is not corrupted.');
+          }
+        }, 50);
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    // Auto Mapping strictly tailored to Column B (GMCS Dealer Code) & Column R (GMCS SPC Name)
+    function populateColumnMappings(headers) {
+      ['mapDealerCode', 'mapExecutive', 'mapDate', 'mapModel'].forEach(id => {
+        const select = document.getElementById(id);
+        select.innerHTML = '';
+        headers.forEach(h => {
+          const opt = document.createElement('option');
+          opt.value = h;
+          opt.textContent = h;
+          select.appendChild(opt);
+        });
+      });
+
+      headers.forEach(h => {
+        const lower = h.toLowerCase().trim();
+        
+        // Exact GMCS Dealer Code (Column B)
+        if (lower === 'gmcs dealer code') {
+          document.getElementById('mapDealerCode').value = h;
+        } else if (!document.getElementById('mapDealerCode').value && lower.includes('gmcs dealer')) {
+          document.getElementById('mapDealerCode').value = h;
+        }
+
+        // Exact GMCS SPC Name (Column R)
+        if (lower === 'gmcs spc name') {
+          document.getElementById('mapExecutive').value = h;
+        } else if (!document.getElementById('mapExecutive').value && (lower.includes('spc name') || lower.includes('sel @'))) {
+          document.getElementById('mapExecutive').value = h;
+        }
+
+        // Sales Date
+        if (lower === 'sales date') {
+          document.getElementById('mapDate').value = h;
+        } else if (!document.getElementById('mapDate').value && (lower.includes('sales in date') || lower.includes('date'))) {
+          document.getElementById('mapDate').value = h;
+        }
+
+        // Model
+        if (lower === 'model') {
+          document.getElementById('mapModel').value = h;
+        } else if (!document.getElementById('mapModel').value && lower.includes('model')) {
+          document.getElementById('mapModel').value = h;
+        }
+
+        // Focus Column (Column G)
+        if (lower === 'focus') {
+          AppData.fields.focus = h;
+        }
+      });
+
+      mappingSection.classList.remove('hidden');
+      mappingSection.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Populate Extra Sheet Heading Tabs Dropdown
+    function populateExtraHeaderOptions(headers) {
+      extraHeaderColumnSelect.innerHTML = '<option value="">-- Choose Column Heading Tab --</option>';
+      headers.forEach(h => {
+        const opt = document.createElement('option');
+        opt.value = h;
+        opt.textContent = h;
+        extraHeaderColumnSelect.appendChild(opt);
+      });
+      extraHeaderValueSelect.innerHTML = '<option value="ALL">All Values</option>';
+      extraHeaderValueSelect.disabled = true;
+    }
+
+    // Extra Header Tab Event Handlers
+    extraHeaderColumnSelect.addEventListener('change', function() {
+      const selectedCol = this.value;
+      AppData.selectedExtraHeader = selectedCol;
+      AppData.selectedExtraValue = 'ALL';
+
+      if (!selectedCol) {
+        extraHeaderValueSelect.innerHTML = '<option value="ALL">All Values</option>';
+        extraHeaderValueSelect.disabled = true;
+        extraFilterStatus.innerHTML = '<i class="fa-solid fa-circle-info text-blue-400 mr-1"></i> No heading filter applied';
+        computeAndRender();
+        return;
+      }
+
+      const uniqueVals = new Set();
+      AppData.rawRecords.forEach(r => {
+        const v = String(r[selectedCol] !== undefined ? r[selectedCol] : '').trim();
+        if (v) uniqueVals.add(v);
+      });
+
+      const sortedVals = Array.from(uniqueVals).sort();
+      extraHeaderValueSelect.innerHTML = `<option value="ALL">All ${selectedCol} (${sortedVals.length} unique)</option>`;
+      sortedVals.forEach(val => {
+        const opt = document.createElement('option');
+        opt.value = val;
+        opt.textContent = val;
+        extraHeaderValueSelect.appendChild(opt);
+      });
+
+      extraHeaderValueSelect.disabled = false;
+      extraFilterStatus.innerHTML = `<i class="fa-solid fa-filter text-amber-400 mr-1"></i> Filtering on: <b>${selectedCol}</b> (All)`;
+      computeAndRender();
+    });
+
+    extraHeaderValueSelect.addEventListener('change', function() {
+      AppData.selectedExtraValue = this.value;
+      if (this.value === 'ALL') {
+        extraFilterStatus.innerHTML = `<i class="fa-solid fa-filter text-amber-400 mr-1"></i> Filtering on: <b>${AppData.selectedExtraHeader}</b> (All)`;
+      } else {
+        extraFilterStatus.innerHTML = `<i class="fa-solid fa-filter text-emerald-400 mr-1"></i> <b>${AppData.selectedExtraHeader}</b> = <span class="text-white bg-blue-700/60 px-1.5 py-0.5 rounded font-mono">${this.value}</span>`;
+      }
+      computeAndRender();
+    });
+
+    // 100% Accurate Model Normalization Engine using Model + Focus Column Dual-Check
+    function normalizeSamsungModel(rawModel, rowObj) {
+      const m = String(rawModel || '').trim().toUpperCase();
+      
+      // Get Focus column value if present in the row
+      let f = '';
+      if (rowObj) {
+        f = String(rowObj['Focus'] || rowObj['FOCUS'] || rowObj[AppData.fields.focus] || '').trim().toUpperCase();
+      }
+
+      // Check Galaxy Book (Laptops) strictly
+      if (m.startsWith('NP7') || m.startsWith('NP9') || m.startsWith('NP') || f.includes('GALAXY BOOK') || f.includes('NOTE PC') || f.includes('LAPTOP')) {
+        return 'GALAXY BOOK (LAPTOPS)';
+      }
+
+      // 1. Check Fold / Flip Series
+      if (f.includes('FOLD 8 ULTRA') || m.includes('FOLD8 ULTRA')) return 'FOLD8 ULTRA';
+      if (f.includes('FOLD 8') || f.includes('Z FOLD 8') || f.includes('FOLD8') || m.includes('F971') || m.includes('FOLD8')) return 'FOLD8';
+      if (f.includes('FLIP 8') || f.includes('Z FLIP 8') || f.includes('FLIP8') || m.includes('F761') || m.includes('FLIP8')) return 'FLIP8';
+      if (f.includes('FOLD 7') || f.includes('Z FOLD 7') || f.includes('FOLD7') || m.includes('F966') || m.includes('FOLD7')) return 'FOLD7';
+
+      // 2. Check S-Series Flagships
+      if (f.includes('S26 ULTRA') || m.includes('5948BB') || m.includes('S948B') || m.includes('S948') || m.includes('S26 ULTRA') || m.includes('S26U')) return 'S26 ULTRA';
+      if (f.includes('S26') && !f.includes('FE') && !f.includes('ULTRA') || m.includes('5942BC') || m.includes('S942') || m.includes('S26')) return 'S26';
+      if (f.includes('S25 ULTRA') || m.includes('5938BB') || m.includes('S938') || m.includes('S25 ULTRA') || m.includes('S25U')) return 'S25 ULTRA';
+      if (f.includes('S25 EDGE') || m.includes('S25 EDGE')) return 'S25 Edge';
+      if (f.includes('S26 FE') || m.includes('S26 FE') || m.includes('S731')) return 'S26 FE';
+      if (f.includes('S25 FE') || m.includes('S25 FE') || m.includes('S721')) return 'S25 FE';
+      if (f.includes('S25') && !f.includes('FE') && !f.includes('ULTRA') && !f.includes('EDGE') || m.includes('5931BC') || m.includes('S931') || m.includes('S25')) return 'S25';
+
+      // 3. Check A-Series
+      if (f.includes('A57') || m.includes('A576BF') || m.includes('A576') || m.includes('A57')) return 'A57';
+      if (f.includes('A37') || m.includes('A376') || m.includes('A37')) return 'A37';
+      if (f.includes('A27') || m.includes('A276') || m.includes('A27')) return 'A27';
+      if (f.includes('A36') || m.includes('A366EJ') || m.includes('A366') || m.includes('A36')) return 'A36';
+      if (f.includes('A26') || m.includes('A266') || m.includes('A26')) return 'A26';
+      if (f.includes('A17') || m.includes('A176NM') || m.includes('A176NL') || m.includes('A176') || m.includes('A17')) return 'A17';
+      if (f.includes('A07') || m.includes('A076') || m.includes('A07')) return 'A07 5G';
+
+      // 4. Check F-Series
+      if (f.includes('F17') || m.includes('E176BB') || m.includes('E176') || m.includes('F17')) return 'F17';
+
+      // 5. Tablets & Wearables
+      if (f.includes('TAB') || m.includes('TAB') || m.startsWith('SM-X')) return 'TABLETS';
+      if (f.includes('WATCH') || f.includes('BUDS') || m.startsWith('SM-R') || m.includes('WATCH') || m.includes('BUDS')) return 'WEARABLES';
+
+      // Direct exact target match check
+      for (const target of TARGET_MODELS) {
+        if (m === target || f === target) {
+          return target;
+        }
+      }
+
+      // If unmatched, do NOT dump into laptop; return actual string or Other
+      return m || 'OTHER';
+    }
+
+    // Robust Date Normalizer
+    function normalizeDateString(val) {
+      if (val === null || val === undefined || val === '') return 'Undated';
+      
+      if (val instanceof Date) {
+        if (isNaN(val.getTime())) return 'Undated';
+        return formatDateToStandard(val);
+      }
+
+      if (typeof val === 'number') {
+        const d = new Date((val - (25567 + 2)) * 86400 * 1000);
+        return formatDateToStandard(d);
+      }
+
+      const str = String(val).trim();
+      
+      // Numeric yyyymmdd (e.g. 20261001)
+      if (/^\d{8}$/.test(str)) {
+        const y = str.substring(0, 4);
+        const m = str.substring(4, 6);
+        const day = str.substring(6, 8);
+        return `${day}-${getMonthAbbr(parseInt(m, 10))}-${y.substring(2)}`;
+      }
+
+      const parsed = Date.parse(str);
+      if (!isNaN(parsed) && !str.match(/^\d+$/)) {
+        return formatDateToStandard(new Date(parsed));
+      }
+
+      return str;
+    }
+
+    function formatDateToStandard(d) {
+      const day = String(d.getDate()).padStart(2, '0');
+      const monthAbbr = getMonthAbbr(d.getMonth() + 1);
+      const yr = String(d.getFullYear()).slice(-2);
+      return `${day}-${monthAbbr}-${yr}`;
+    }
+
+    function getMonthAbbr(monthNum) {
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return months[monthNum - 1] || 'Oct';
+    }
+
+    function sortDateKeys(dateArr) {
+      return dateArr.sort((a, b) => {
+        const da = Date.parse(a);
+        const db = Date.parse(b);
+        if (!isNaN(da) && !isNaN(db)) return da - db;
+        return a.localeCompare(b);
+      });
+    }
+
+    // Visualize Data Action
+    visualizeDataBtn.addEventListener('click', () => {
+      AppData.fields = {
+        dealerCode: document.getElementById('mapDealerCode').value,
+        spcName: document.getElementById('mapExecutive').value,
+        date: document.getElementById('mapDate').value,
+        model: document.getElementById('mapModel').value,
+        focus: AppData.fields.focus || ''
+      };
+
+      prepareFastIndices();
+      analyticsDashboard.classList.remove('hidden');
+      analyticsDashboard.scrollIntoView({ behavior: 'smooth' });
+      computeAndRender();
+    });
+
+    // Build Fast Lookups strictly on Column B GMCS Dealer Codes
+    function prepareFastIndices() {
+      const { dealerCode, spcName, date } = AppData.fields;
+      const dealersMap = new Map();
+      const execsSet = new Set();
+      const datesSet = new Set();
+
+      AppData.rawRecords.forEach(row => {
+        const dVal = row[dealerCode];
+        const dCode = (dVal !== null && dVal !== undefined) ? String(dVal).trim() : '';
+        
+        const spcVal = row[spcName];
+        const spc = (spcVal !== null && spcVal !== undefined) ? String(spcVal).trim() : '';
+
+        const dDate = normalizeDateString(row[date]);
+
+        if (dCode) dealersMap.set(dCode, (dealersMap.get(dCode) || 0) + 1);
+        if (spc) execsSet.add(spc);
+        if (dDate && dDate !== 'Undated') datesSet.add(dDate);
+      });
+
+      AppData.allDealerCodes = Array.from(dealersMap.keys()).sort();
+      AppData.allExecutives = Array.from(execsSet).sort();
+      AppData.allDates = sortDateKeys(Array.from(datesSet));
+
+      dealerCountLabel.textContent = `${AppData.allDealerCodes.length.toLocaleString()} codes loaded`;
+
+      // Populate GMCS SPC Name Dropdown
+      filterExecutive.innerHTML = '<option value="ALL">All Executives (GMCS SPC Name)</option>';
+      AppData.allExecutives.forEach(e => {
+        const opt = document.createElement('option');
+        opt.value = e;
+        opt.textContent = e;
+        filterExecutive.appendChild(opt);
+      });
+
+      // Populate Dates Dropdown
+      filterDate.innerHTML = '<option value="ALL">All Dates (Date-wise Matrix)</option>';
+      AppData.allDates.forEach(d => {
+        const opt = document.createElement('option');
+        opt.value = d;
+        opt.textContent = `Date: ${d}`;
+        filterDate.appendChild(opt);
+      });
+
+      // Populate Target Models Dropdown
+      filterModel.innerHTML = '<option value="ALL">All Samsung Target Models</option>';
+      TARGET_MODELS.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m;
+        opt.textContent = m;
+        filterModel.appendChild(opt);
+      });
+    }
+
+    // Searchable GMCS Dealer Code Dropdown
+    dealerSearchInput.addEventListener('input', function() {
+      const query = this.value.toUpperCase().trim();
+      dealerDropdownList.innerHTML = '';
+
+      if (!query) {
+        dealerDropdownList.classList.add('hidden');
+        return;
+      }
+
+      const matches = AppData.allDealerCodes.filter(c => c.toUpperCase().includes(query)).slice(0, 30);
+
+      if (matches.length === 0) {
+        dealerDropdownList.innerHTML = `<div class="p-3 text-slate-400 text-center">No GMCS Dealer Code matching "${query}"</div>`;
+      } else {
+        matches.forEach(code => {
+          const item = document.createElement('div');
+          item.className = 'p-2 hover:bg-slate-700 cursor-pointer text-slate-200 flex items-center justify-between font-mono';
+          item.innerHTML = `<span><i class="fa-solid fa-barcode text-emerald-400 mr-1.5"></i>${code}</span> <span class="text-[10px] text-blue-300 font-sans font-semibold">Select</span>`;
+          item.addEventListener('click', () => {
+            selectDealerCode(code);
+          });
+          dealerDropdownList.appendChild(item);
+        });
+      }
+
+      dealerDropdownList.classList.remove('hidden');
+    });
+
+    function selectDealerCode(code) {
+      AppData.selectedDealerCode = code;
+      activeDealerText.textContent = `GMCS Dealer: ${code}`;
+      activeDealerBadge.classList.remove('hidden');
+      dealerSearchInput.value = '';
+      dealerDropdownList.classList.add('hidden');
+      computeAndRender();
+    }
+
+    clearDealerBtn.addEventListener('click', () => {
+      AppData.selectedDealerCode = 'ALL';
+      activeDealerBadge.classList.add('hidden');
+      computeAndRender();
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!dealerSearchInput.contains(e.target) && !dealerDropdownList.contains(e.target)) {
+        dealerDropdownList.classList.add('hidden');
+      }
+    });
+
+    // Core Filter Listeners
+    [filterExecutive, filterDate, filterModel].forEach(el => {
+      el.addEventListener('change', computeAndRender);
+    });
+
+    resetFiltersBtn.addEventListener('click', () => {
+      AppData.selectedDealerCode = 'ALL';
+      activeDealerBadge.classList.add('hidden');
+      filterExecutive.value = 'ALL';
+      filterDate.value = 'ALL';
+      filterModel.value = 'ALL';
+      dealerSearchInput.value = '';
+      
+      AppData.selectedExtraHeader = '';
+      AppData.selectedExtraValue = 'ALL';
+      extraHeaderColumnSelect.value = '';
+      extraHeaderValueSelect.innerHTML = '<option value="ALL">All Values</option>';
+      extraHeaderValueSelect.disabled = true;
+      extraFilterStatus.innerHTML = '<i class="fa-solid fa-circle-info text-blue-400 mr-1"></i> No heading filter applied';
+
+      computeAndRender();
+    });
+
+    // Master Calculation and Rendering Engine
+    function computeAndRender() {
+      const { dealerCode, spcName, date, model } = AppData.fields;
+
+      const selDealer = AppData.selectedDealerCode;
+      const selExec = filterExecutive.value;
+      const selDate = filterDate.value;
+      const selModel = filterModel.value;
+
+      const extraCol = AppData.selectedExtraHeader;
+      const extraVal = AppData.selectedExtraValue;
+
+      let grandTotalQty = 0;
+      const activeDealers = new Set();
+      const activeExecs = new Set();
+      const dateWiseTotals = {};
+      const modelWiseTotals = {};
+      
+      const matrixPivot = {};
+      const dateColumnsSet = new Set();
+      const executiveWiseUploads = {};
+
+      TARGET_MODELS.forEach(m => {
+        modelWiseTotals[m] = 0;
+        matrixPivot[m] = {};
+      });
+
+      const records = AppData.rawRecords;
+      const totalRows = records.length;
+
+      for (let i = 0; i < totalRows; i++) {
+        const row = records[i];
+        
+        const rawDealer = row[dealerCode];
+        const rDealer = (rawDealer !== null && rawDealer !== undefined) ? String(rawDealer).trim() : '';
+
+        const rawExec = row[spcName];
+        const rExec = (rawExec !== null && rawExec !== undefined && String(rawExec).trim() !== '') ? String(rawExec).trim() : 'Unassigned';
+
+        const rDate = normalizeDateString(row[date]);
+        const rModel = normalizeSamsungModel(row[model], row);
+
+        // Filters
+        if (selDealer !== 'ALL' && rDealer !== selDealer) continue;
+        if (selExec !== 'ALL' && rExec !== selExec) continue;
+        if (selDate !== 'ALL' && rDate !== selDate) continue;
+        if (selModel !== 'ALL' && rModel !== selModel) continue;
+
+        if (extraCol && extraVal !== 'ALL') {
+          const rowExtraVal = String(row[extraCol] !== undefined ? row[extraCol] : '').trim();
+          if (rowExtraVal !== extraVal) continue;
+        }
+
+        const rowQty = 1;
+
+        grandTotalQty += rowQty;
+        if (rDealer) activeDealers.add(rDealer);
+        if (rExec) activeExecs.add(rExec);
+        if (rDate && rDate !== 'Undated') dateColumnsSet.add(rDate);
+
+        dateWiseTotals[rDate] = (dateWiseTotals[rDate] || 0) + rowQty;
+        
+        if (modelWiseTotals[rModel] !== undefined) {
+          modelWiseTotals[rModel] += rowQty;
+        } else {
+          modelWiseTotals[rModel] = rowQty;
+        }
+
+        if (!matrixPivot[rModel]) matrixPivot[rModel] = {};
+        matrixPivot[rModel][rDate] = (matrixPivot[rModel][rDate] || 0) + rowQty;
+
+        if (!executiveWiseUploads[rExec]) {
+          executiveWiseUploads[rExec] = { totalQty: 0, dealers: new Set() };
+        }
+        executiveWiseUploads[rExec].totalQty += rowQty;
+        if (rDealer) executiveWiseUploads[rExec].dealers.add(rDealer);
+      }
+
+      // Update KPI Cards
+      document.getElementById('kpiTotalQty').textContent = grandTotalQty.toLocaleString();
+      document.getElementById('kpiActiveDealers').textContent = activeDealers.size.toLocaleString();
+      document.getElementById('kpiActiveExecs').textContent = activeExecs.size.toLocaleString();
+
+      // Accurate Top Model Calculation (Excluding generic OTHER)
+      let topMName = '-';
+      let topMQty = 0;
+      Object.entries(modelWiseTotals).forEach(([m, q]) => {
+        if (q > topMQty && m !== 'OTHER') {
+          topMQty = q;
+          topMName = m;
+        }
+      });
+      document.getElementById('kpiTopModel').textContent = topMName;
+      document.getElementById('kpiTopModelQty').textContent = `${topMQty.toLocaleString()} units`;
+
+      // Render Visualizations and Tables
+      renderExecutiveSummary(executiveWiseUploads, grandTotalQty);
+      
+      const sortedActiveDates = sortDateKeys(Array.from(dateColumnsSet));
+      renderModelWiseDateWiseMatrix(matrixPivot, sortedActiveDates, modelWiseTotals, dateWiseTotals, grandTotalQty);
+      
+      renderCharts(dateWiseTotals, modelWiseTotals);
+    }
+
+    // Render GMCS SPC Executive Summary Table
+    function renderExecutiveSummary(execMap, grandTotal) {
+      const tbody = document.getElementById('execTableBody');
+      tbody.innerHTML = '';
+
+      const list = Object.entries(execMap).sort((a, b) => b[1].totalQty - a[1].totalQty);
+      document.getElementById('execCountBadge').textContent = `${list.length} Executives Reporting`;
+
+      if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center py-6 text-slate-400">No records found for active filters.</td></tr>`;
+        return;
+      }
+
+      list.forEach(([name, data]) => {
+        const share = grandTotal > 0 ? ((data.totalQty / grandTotal) * 100).toFixed(1) : 0;
+        const dealerSnippet = Array.from(data.dealers).slice(0, 3).join(', ') + (data.dealers.size > 3 ? ` (+${data.dealers.size - 3} more)` : '');
+
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50 transition-colors';
+        tr.innerHTML = `
+          <td class="py-2 px-3 sm:px-4 font-bold text-slate-900 flex items-center gap-2">
+            <span class="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-blue-100 text-samsung-blue flex items-center justify-center text-[10px] font-bold">
+              ${name.charAt(0).toUpperCase()}
+            </span>
+            ${name}
+          </td>
+          <td class="py-2 px-3 sm:px-4 text-slate-600 font-mono text-[11px]">${dealerSnippet || '-'}</td>
+          <td class="py-2 px-3 sm:px-4 text-center font-bold text-slate-900">${data.totalQty.toLocaleString()}</td>
+          <td class="py-2 px-3 sm:px-4 text-right">
+            <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-samsung-blue border border-blue-200">
+              ${share}%
+            </span>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Model-Wise & Date-Wise Sales Matrix (Models on Rows, Dates on Columns)
+    function renderModelWiseDateWiseMatrix(matrixPivot, datesList, modelTotals, dateTotals, grandTotal) {
+      const thead = document.getElementById('matrixThead');
+      const tbody = document.getElementById('matrixTbody');
+      const tfoot = document.getElementById('matrixTfoot');
+
+      thead.innerHTML = '';
+      tbody.innerHTML = '';
+      tfoot.innerHTML = '';
+
+      if (datesList.length === 0 && grandTotal === 0) {
+        tbody.innerHTML = `<tr><td class="text-center py-8 text-slate-400">No sales records available for current filters.</td></tr>`;
+        return;
+      }
+
+      // 1. Table Header Row (Model | Date 1 | Date 2 | ... | Model Total)
+      let headHTML = `<tr>
+        <th class="py-2.5 px-3 sm:px-4 bg-slate-100 text-slate-900 sticky-col-left border-r border-slate-300 min-w-[160px] sm:min-w-[170px]">Samsung Model / Line</th>`;
+      
+      datesList.forEach(d => {
+        headHTML += `<th class="py-2.5 px-2.5 text-center whitespace-nowrap min-w-[75px] font-bold border-r border-slate-200 bg-slate-50">${d}</th>`;
+      });
+
+      headHTML += `<th class="py-2.5 px-3 text-center bg-blue-100 text-samsung-blue font-extrabold border-l border-slate-300 min-w-[90px]">Model Total</th></tr>`;
+      thead.innerHTML = headHTML;
+
+      // 2. Table Body Rows (One row per Target Model)
+      TARGET_MODELS.forEach(modelName => {
+        const rowModelTotal = modelTotals[modelName] || 0;
+        const rowBg = rowModelTotal > 0 ? 'hover:bg-blue-50/50' : 'opacity-65 hover:opacity-100';
+
+        let rowHTML = `<tr class="${rowBg} transition-colors">
+          <td class="py-2 px-3 sm:px-4 font-bold text-slate-900 bg-white sticky-col-left border-r border-slate-200 whitespace-nowrap shadow-xs">
+            <span class="inline-block w-2 h-2 rounded-full mr-2 ${rowModelTotal > 0 ? (modelName.includes('LAPTOP') ? 'bg-cyan-500' : 'bg-samsung-blue') : 'bg-slate-300'}"></span>
+            ${modelName}
+          </td>`;
+
+        datesList.forEach(d => {
+          const count = (matrixPivot[modelName] && matrixPivot[modelName][d]) ? matrixPivot[modelName][d] : 0;
+          rowHTML += `<td class="py-2 px-2.5 text-center border-r border-slate-100 ${count > 0 ? 'font-bold text-slate-900 bg-blue-50/30' : 'text-slate-300'}">${count > 0 ? count.toLocaleString() : '-'}</td>`;
+        });
+
+        rowHTML += `<td class="py-2 px-3 text-center font-extrabold bg-blue-50 text-samsung-blue border-l border-slate-200">${rowModelTotal > 0 ? rowModelTotal.toLocaleString() : '-'}</td></tr>`;
+        tbody.innerHTML += rowHTML;
+      });
+
+      // 3. Table Footer Row (Daily Column Totals & Grand Total)
+      let footHTML = `<tr>
+        <td class="py-2.5 px-3 sm:px-4 uppercase text-slate-900 bg-slate-200 sticky-col-left border-r border-slate-300 font-extrabold tracking-wider">Day Total</td>`;
+
+      datesList.forEach(d => {
+        const daySum = dateTotals[d] || 0;
+        footHTML += `<td class="py-2.5 px-2.5 text-center font-bold text-slate-900 border-r border-slate-300 bg-slate-100">${daySum > 0 ? daySum.toLocaleString() : '-'}</td>`;
+      });
+
+      footHTML += `<td class="py-2.5 px-3 text-center text-sm font-black bg-blue-200 text-samsung-dark border-l border-slate-300">${grandTotal.toLocaleString()}</td></tr>`;
+      tfoot.innerHTML = footHTML;
+    }
+
+    // Chart Visualizations
+    function renderCharts(dateTotals, modelTotals) {
+      // 1. Date Trend Chart
+      const trendCanvas = document.getElementById('trendChartCanvas').getContext('2d');
+      const sortedDates = sortDateKeys(Object.keys(dateTotals).filter(d => d !== 'Undated'));
+      const dateCounts = sortedDates.map(d => dateTotals[d]);
+
+      if (AppData.chartTrendInst) AppData.chartTrendInst.destroy();
+
+      AppData.chartTrendInst = new Chart(trendCanvas, {
+        type: AppData.activeChartType,
+        data: {
+          labels: sortedDates,
+          datasets: [{
+            label: 'Total Qty Sold',
+            data: dateCounts,
+            backgroundColor: 'rgba(3, 78, 162, 0.8)',
+            borderColor: '#034EA2',
+            borderWidth: 2,
+            borderRadius: 6,
+            tension: 0.3,
+            fill: AppData.activeChartType === 'line'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { precision: 0 } },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+
+      // 2. Model Share Donut Chart
+      const donutCanvas = document.getElementById('donutChartCanvas').getContext('2d');
+      const nonZeroModels = Object.entries(modelTotals).filter(([m, q]) => q > 0 && m !== 'OTHER');
+      const mLabels = nonZeroModels.map(([m]) => m);
+      const mData = nonZeroModels.map(([_, q]) => q);
+
+      if (AppData.chartPieInst) AppData.chartPieInst.destroy();
+
+      const colorPalette = [
+        '#034EA2', '#2B80FF', '#10B981', '#F59E0B', '#8B5CF6',
+        '#EC4899', '#06B6D4', '#14B8A6', '#F97316', '#64748B'
+      ];
+
+      AppData.chartPieInst = new Chart(donutCanvas, {
+        type: 'doughnut',
+        data: {
+          labels: mLabels.length ? mLabels : ['No Sales'],
+          datasets: [{
+            data: mData.length ? mData : [1],
+            backgroundColor: mData.length ? colorPalette : ['#e2e8f0'],
+            borderWidth: 2,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '65%',
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } }
+          }
+        }
+      });
+    }
+
+    // Chart Toggles
+    document.getElementById('toggleBarChart').addEventListener('click', (e) => {
+      AppData.activeChartType = 'bar';
+      e.target.className = 'px-2 py-0.5 rounded bg-white shadow-xs text-samsung-blue font-bold text-[11px]';
+      document.getElementById('toggleLineChart').className = 'px-2 py-0.5 rounded text-slate-600 hover:text-slate-900 text-[11px]';
+      computeAndRender();
+    });
+
+    document.getElementById('toggleLineChart').addEventListener('click', (e) => {
+      AppData.activeChartType = 'line';
+      e.target.className = 'px-2 py-0.5 rounded bg-white shadow-xs text-samsung-blue font-bold text-[11px]';
+      document.getElementById('toggleBarChart').className = 'px-2 py-0.5 rounded text-slate-600 hover:text-slate-900 text-[11px]';
+      computeAndRender();
+    });
+
+    // Export Matrix Table to Excel (.xlsx)
+    document.getElementById('exportExcelBtn').addEventListener('click', () => {
+      const tbl = document.getElementById('matrixTable');
+      const wb = XLSX.utils.table_to_book(tbl, { sheet: "Model_Date_Matrix" });
+      XLSX.writeFile(wb, `Samsung_Model_Date_Matrix_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    });
+
+    // Export Matrix Table to CSV
+    document.getElementById('exportCsvBtn').addEventListener('click', () => {
+      const tbl = document.getElementById('matrixTable');
+      const csv = XLSX.utils.sheet_to_csv(XLSX.utils.table_to_sheet(tbl));
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute("download", `Samsung_Model_Date_Matrix_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
+
+    // Reset Engine
+    document.getElementById('resetAppBtn').addEventListener('click', () => {
+      if (confirm('Analytics engine reset karein?')) {
+        window.location.reload();
+      }
+    });
+
+    // Exact GMCS Demo Generator Matching Your Uploaded Sheet
+    document.getElementById('loadQuickDemoBtn').addEventListener('click', () => {
+      const sampleDealers = ['WESD568774', 'JHAD066774', 'WESD00589595', 'WESD561286', 'WESD567136', 'ORID093651', 'JHAD066748', 'MEGD000746', 'ORID093392', 'ASSD00119941', 'WESD566564', 'BHRD00189381', 'KARD019131', 'HARD030266'];
+      const sampleSPCs = ['ASRAF ALI MOLLA', 'P NARESH RAO', 'DURBA DUTTA CHOWDHURY', 'BIPLOB ROY', 'AYON KUMAR NASKAR', 'SANJAY DUTT PRUSTY', 'RAJA RAJAK', 'SUKMAYA DAS', 'SANGRAM SUBUDHI', 'SABYASACHI BANERJEE', 'BHASKAR DEY', 'MD.PARVEZ UDDIN', 'SOUMYA RANJAN RATH', 'TANMOY KUMAR DAS', 'AKASH SAHA', 'ISHTEYAQUE AHMAD', 'SUBHADEEP SAHA', 'BISWAJIT DEBNATH', 'SNEHA SINHA'];
+      const sampleDates = ['01-Oct-26', '02-Oct-26', '03-Oct-26', '04-Oct-26', '05-Oct-26', '06-Oct-26', '07-Oct-26'];
+      
+      const sampleProducts = [
+        { model: 'F971BD', focus: 'Z Fold 8' },
+        { model: 'F761BD', focus: 'Z Flip 8' },
+        { model: 'F966BD', focus: 'Z Fold 7' },
+        { model: '5948BB', focus: 'S26 Ultra' },
+        { model: '5942BC', focus: 'S26' },
+        { model: '5938BB', focus: 'S25 Ultra' },
+        { model: 'S25 EDGE', focus: 'S25 Edge' },
+        { model: 'S731', focus: 'S26 FE' },
+        { model: '5931BC', focus: 'S25' },
+        { model: 'S721', focus: 'S25 FE' },
+        { model: 'A576BF', focus: 'A57 5G' },
+        { model: 'A376', focus: 'A37' },
+        { model: 'A276', focus: 'A27' },
+        { model: 'A366EJ', focus: 'A36 5G' },
+        { model: 'A266', focus: 'A26' },
+        { model: 'A176NM', focus: 'A17 5G' },
+        { model: 'A076', focus: 'A07 5G' },
+        { model: 'E176BB', focus: 'F17 5G' },
+        { model: 'NP740VJ-LG1IN', focus: 'Galaxy Book5' }
+      ];
+
+      const sampleRegions = ['EAST1', 'EAST2', 'NORTH', 'WEST'];
+      const sampleStates = ['WEST BENGAL', 'JHARKHAND', 'ASSAM', 'MEGHALAYA', 'BIHAR'];
+      const sampleChains = ['Croma', 'Reliance Digital', 'Samsung SmartCafe'];
+
+      const generatedRows = [];
+      for (let i = 0; i < 500; i++) {
+        const prod = sampleProducts[i % sampleProducts.length];
+        generatedRows.push({
+          'GMCS SPC Code': 'EAST' + (100000 + i),
+          'GMCS Dealer Code': sampleDealers[i % sampleDealers.length],
+          'GMCS SPC Name': sampleSPCs[i % sampleSPCs.length],
+          'Model': prod.model,
+          'Focus': prod.focus,
+          'Sales Date': sampleDates[i % sampleDates.length],
+          'Region': sampleRegions[i % sampleRegions.length],
+          'State': sampleStates[i % sampleStates.length],
+          'Chain': sampleChains[i % sampleChains.length],
+          'IMEI': '351491260' + (100000 + i)
+        });
+      }
+
+      fileInfoBox.textContent = 'Loaded 500 GMCS Demo Rows';
+      fileInfoBox.classList.remove('hidden');
+      statusBadge.classList.remove('hidden');
+      statusText.textContent = '500 GMCS Rows';
+
+      AppData.rawRecords = generatedRows;
+      AppData.allHeaders = Object.keys(generatedRows[0]);
+      populateColumnMappings(AppData.allHeaders);
+      populateExtraHeaderOptions(AppData.allHeaders);
+    });
+  </script>
+</body>
+</html>
